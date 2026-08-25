@@ -9781,6 +9781,13 @@ void test_ngtcp2_conn_recv_new_connection_id(void) {
   static const ngtcp2_stateless_reset_token token3 = {
     .data = {0xFD},
   };
+  static const ngtcp2_cid cid4 = {
+    .datalen = 4,
+    .data = {0xF0, 0xF1, 0xF2, 0xF6},
+  };
+  static const ngtcp2_stateless_reset_token token4 = {
+    .data = {0xFC},
+  };
   ngtcp2_dcid *dcid;
   int rv;
   ngtcp2_frame_chain *frc;
@@ -9975,10 +9982,10 @@ void test_ngtcp2_conn_recv_new_connection_id(void) {
 
   fr.new_connection_id = (ngtcp2_new_connection_id){
     .type = NGTCP2_FRAME_NEW_CONNECTION_ID,
-    .seq = 3,
+    .seq = 4,
     .retire_prior_to = 2,
-    .cid = cid3,
-    .token = token3,
+    .cid = cid4,
+    .token = token4,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -9986,7 +9993,8 @@ void test_ngtcp2_conn_recv_new_connection_id(void) {
   rv = ngtcp2_conn_read_pkt(conn, &new_path.path, NULL, buf, pktlen, ++t);
 
   assert_int(0, ==, rv);
-  assert_size(0, ==, ngtcp2_dcidtr_unused_len(&conn->dcid.dtr));
+  assert_size(1, ==, ngtcp2_dcidtr_unused_len(&conn->dcid.dtr));
+  assert_size(2, ==, ngtcp2_dcidtr_retired_len(&conn->dcid.dtr));
   assert_true(conn->pv->flags & NGTCP2_PV_FLAG_FALLBACK_PRESENT);
   assert_uint64(2, ==, conn->pv->dcid.seq);
   assert_uint64(3, ==, conn->pv->fallback_dcid.seq);
@@ -10000,6 +10008,21 @@ void test_ngtcp2_conn_recv_new_connection_id(void) {
   assert_uint64(NGTCP2_FRAME_RETIRE_CONNECTION_ID, ==, frc->fr.hd.type);
   assert_uint64(1, ==, frc->fr.retire_connection_id.seq);
   assert_null(frc->next);
+
+  /* Receiving the retired Connection ID is ignored, and not added to
+     the retired list. */
+  frs[0].new_connection_id = (ngtcp2_new_connection_id){
+    .type = NGTCP2_FRAME_NEW_CONNECTION_ID,
+    .seq = 1,
+    .cid = cid,
+    .token = token,
+  };
+
+  pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), frs, 1);
+  rv = ngtcp2_conn_read_pkt(conn, &new_path.path, NULL, buf, pktlen, ++t);
+
+  assert_int(0, ==, rv);
+  assert_size(2, ==, ngtcp2_dcidtr_retired_len(&conn->dcid.dtr));
 
   ngtcp2_conn_del(conn);
 

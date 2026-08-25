@@ -131,20 +131,6 @@ void ngtcp2_dcid_copy_cid_token(ngtcp2_dcid *dest, const ngtcp2_dcid *src) {
   }
 }
 
-int ngtcp2_dcid_verify_uniqueness(const ngtcp2_dcid *dcid, uint64_t seq,
-                                  const ngtcp2_cid *cid,
-                                  const ngtcp2_stateless_reset_token *token) {
-  if (dcid->seq == seq) {
-    return ngtcp2_cid_eq(&dcid->cid, cid) &&
-               (dcid->flags & NGTCP2_DCID_FLAG_TOKEN_PRESENT) &&
-               ngtcp2_stateless_reset_token_eq(&dcid->token, token)
-             ? 0
-             : NGTCP2_ERR_PROTO;
-  }
-
-  return !ngtcp2_cid_eq(&dcid->cid, cid) ? 0 : NGTCP2_ERR_PROTO;
-}
-
 int ngtcp2_dcid_verify_stateless_reset_token(
   const ngtcp2_dcid *dcid, const ngtcp2_path *path,
   const ngtcp2_stateless_reset_token *token) {
