@@ -35,7 +35,7 @@ static const MunitTest tests[] = {
   munit_void_test(test_ngtcp2_dcidtr_find_bound_dcid),
   munit_void_test(test_ngtcp2_dcidtr_bind_zerolen_dcid),
   munit_void_test(test_ngtcp2_dcidtr_verify_stateless_reset),
-  munit_void_test(test_ngtcp2_dcidtr_verify_token_uniqueness),
+  munit_void_test(test_ngtcp2_dcidtr_verify_cid_uniqueness),
   munit_void_test(test_ngtcp2_dcidtr_retire_inactive_dcid_prior_to),
   munit_void_test(test_ngtcp2_dcidtr_retire_active_dcid),
   munit_void_test(test_ngtcp2_dcidtr_retire_stale_bound_dcid),
@@ -265,7 +265,7 @@ void test_ngtcp2_dcidtr_verify_stateless_reset(void) {
   assert_int(NGTCP2_ERR_INVALID_ARGUMENT, ==, rv);
 }
 
-void test_ngtcp2_dcidtr_verify_token_uniqueness(void) {
+void test_ngtcp2_dcidtr_verify_cid_uniqueness(void) {
   ngtcp2_dcidtr dtr;
   ngtcp2_path_storage ps[3];
   static const ngtcp2_cid cid[] = {
@@ -296,7 +296,6 @@ void test_ngtcp2_dcidtr_verify_token_uniqueness(void) {
   ngtcp2_dcid *dcid;
   size_t i;
   int rv;
-  int found;
 
   for (i = 0; i < ngtcp2_arraylen(ps); ++i) {
     path_init(&ps[i], 0, 0, 0, (uint16_t)i + 1);
@@ -312,36 +311,17 @@ void test_ngtcp2_dcidtr_verify_token_uniqueness(void) {
 
   assert_int(0, ==, rv);
 
-  found = 0;
-  rv =
-    ngtcp2_dcidtr_verify_token_uniqueness(&dtr, &found, 0, &cid[0], &token[0]);
-
-  assert_int(0, ==, rv);
-  assert_true(found);
-
-  found = 0;
-  rv =
-    ngtcp2_dcidtr_verify_token_uniqueness(&dtr, &found, 1, &cid[1], &token[1]);
-
-  assert_int(0, ==, rv);
-  assert_true(found);
-
-  found = 0;
-  rv =
-    ngtcp2_dcidtr_verify_token_uniqueness(&dtr, &found, 2, &cid[2], &token[2]);
-
-  assert_int(0, ==, rv);
-  assert_false(found);
-
-  rv =
-    ngtcp2_dcidtr_verify_token_uniqueness(&dtr, &found, 1, &cid[2], &token[2]);
+  rv = ngtcp2_dcidtr_verify_cid_uniqueness(&dtr, &cid[0]);
 
   assert_int(NGTCP2_ERR_PROTO, ==, rv);
 
-  rv =
-    ngtcp2_dcidtr_verify_token_uniqueness(&dtr, &found, 2, &cid[0], &token[0]);
+  rv = ngtcp2_dcidtr_verify_cid_uniqueness(&dtr, &cid[1]);
 
   assert_int(NGTCP2_ERR_PROTO, ==, rv);
+
+  rv = ngtcp2_dcidtr_verify_cid_uniqueness(&dtr, &cid[2]);
+
+  assert_int(0, ==, rv);
 }
 
 void test_ngtcp2_dcidtr_retire_inactive_dcid_prior_to(void) {

@@ -157,14 +157,6 @@ void ngtcp2_dcid_copy(ngtcp2_dcid *dest, const ngtcp2_dcid *src);
 void ngtcp2_dcid_copy_cid_token(ngtcp2_dcid *dest, const ngtcp2_dcid *src);
 
 /*
- * ngtcp2_dcid_verify_uniqueness verifies uniqueness of (|seq|, |cid|,
- * |token|) tuple against |dcid|.
- */
-int ngtcp2_dcid_verify_uniqueness(const ngtcp2_dcid *dcid, uint64_t seq,
-                                  const ngtcp2_cid *cid,
-                                  const ngtcp2_stateless_reset_token *token);
-
-/*
  * ngtcp2_dcid_verify_stateless_reset_token verifies stateless reset
  * token |token| received on |path| against the one included in
  * |dcid|.  Tokens are compared in constant time.  This function

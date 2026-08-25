@@ -8161,47 +8161,50 @@ static int conn_recv_max_streams(ngtcp2_conn *conn,
  * negative error codes:
  *
  * NGTCP2_ERR_PROTO
- *     |fr| has the duplicated sequence number with different CID or
- *     token; or DCID is zero-length.
+ *     |fr| contains the duplicated Connection ID when |fr|->seq is
+ *     unique; or DCID is zero-length.
  */
 static int conn_recv_new_connection_id(ngtcp2_conn *conn,
                                        const ngtcp2_new_connection_id *fr) {
   size_t len;
   ngtcp2_pv *pv = conn->pv;
   int rv;
-  int found = 0;
   size_t extra_dcid = 0;
 
   if (conn->dcid.current.cid.datalen == 0) {
     return NGTCP2_ERR_PROTO;
   }
 
+  if (ngtcp2_gaptr_is_pushed(&conn->dcid.seqgap, fr->seq, 1)) {
+    return 0;
+  }
+
+  rv = ngtcp2_gaptr_push(&conn->dcid.seqgap, fr->seq, 1);
+  if (rv != 0) {
+    return rv;
+  }
+
+  if (ngtcp2_ksl_len(&conn->dcid.seqgap.gap) > 32) {
+    ngtcp2_gaptr_drop_first_gap(&conn->dcid.seqgap);
+  }
+
+  /* We now assume that fr->seq is unique. */
+
   if (fr->retire_prior_to > fr->seq) {
     return NGTCP2_ERR_FRAME_ENCODING;
   }
 
-  rv = ngtcp2_dcid_verify_uniqueness(&conn->dcid.current, fr->seq, &fr->cid,
-                                     &fr->token);
-  if (rv != 0) {
-    return rv;
-  }
   if (ngtcp2_cid_eq(&conn->dcid.current.cid, &fr->cid)) {
-    found = 1;
+    return NGTCP2_ERR_PROTO;
   }
 
-  if (pv) {
-    rv =
-      ngtcp2_dcid_verify_uniqueness(&pv->dcid, fr->seq, &fr->cid, &fr->token);
-    if (rv != 0) {
-      return rv;
-    }
-    if (ngtcp2_cid_eq(&pv->dcid.cid, &fr->cid)) {
-      found = 1;
-    }
+  if (pv && (ngtcp2_cid_eq(&pv->dcid.cid, &fr->cid) ||
+             ((pv->flags & NGTCP2_PV_FLAG_FALLBACK_PRESENT) &&
+              ngtcp2_cid_eq(&pv->fallback_dcid.cid, &fr->cid)))) {
+    return NGTCP2_ERR_PROTO;
   }
 
-  rv = ngtcp2_dcidtr_verify_token_uniqueness(&conn->dcid.dtr, &found, fr->seq,
-                                             &fr->cid, &fr->token);
+  rv = ngtcp2_dcidtr_verify_cid_uniqueness(&conn->dcid.dtr, &fr->cid);
   if (rv != 0) {
     return rv;
   }
@@ -8233,23 +8236,6 @@ static int conn_recv_new_connection_id(ngtcp2_conn *conn,
     }
 
     return conn_enqueue_retire_connection_id(conn, fr->seq);
-  }
-
-  if (found) {
-    return 0;
-  }
-
-  if (ngtcp2_gaptr_is_pushed(&conn->dcid.seqgap, fr->seq, 1)) {
-    return 0;
-  }
-
-  rv = ngtcp2_gaptr_push(&conn->dcid.seqgap, fr->seq, 1);
-  if (rv != 0) {
-    return rv;
-  }
-
-  if (ngtcp2_ksl_len(&conn->dcid.seqgap.gap) > 32) {
-    ngtcp2_gaptr_drop_first_gap(&conn->dcid.seqgap);
   }
 
   len = ngtcp2_dcidtr_inactive_len(&conn->dcid.dtr);
