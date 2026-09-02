@@ -2168,7 +2168,7 @@ void test_ngtcp2_pkt_stream_max_datalen(void) {
 
   len = ngtcp2_pkt_stream_max_datalen(63, 0, 1073741824, 1073741834);
 
-  assert_size(1073741824, ==, len);
+  assert_size(1073741823, ==, len);
 
   len = ngtcp2_pkt_stream_max_datalen(63, 0, 1073741824, 1073741833);
 
