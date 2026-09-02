@@ -2439,11 +2439,6 @@ size_t ngtcp2_pkt_stream_max_datalen(int64_t stream_id, uint64_t offset,
 
   left -= n;
 
-  if (left > 8 + 1073741823 && len > 1073741823) {
-    len = ngtcp2_min(len, 4611686018427387903UL);
-    return (size_t)ngtcp2_min(len, (uint64_t)(left - 8));
-  }
-
   if (left > 4 + 16383 && len > 16383) {
     len = ngtcp2_min(len, 1073741823);
     return (size_t)ngtcp2_min(len, (uint64_t)(left - 4));
@@ -2468,13 +2463,6 @@ size_t ngtcp2_pkt_crypto_max_datalen(uint64_t offset, size_t len, size_t left) {
   }
 
   left -= n;
-
-  if (left > 8 + 1073741823 && len > 1073741823) {
-#if SIZE_MAX == UINT64_MAX
-    len = ngtcp2_min(len, 4611686018427387903UL);
-#endif /* SIZE_MAX == UINT64_MAX */
-    return ngtcp2_min(len, left - 8);
-  }
 
   if (left > 4 + 16383 && len > 16383) {
     len = ngtcp2_min(len, 1073741823);
