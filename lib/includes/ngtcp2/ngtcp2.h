@@ -5923,8 +5923,8 @@ ngtcp2_conn_get_negotiated_version2(const ngtcp2_conn *conn);
  *
  * `ngtcp2_conn_tls_early_data_rejected` tells |conn| that early data
  * was rejected by a server during TLS handshake, or client decided
- * not to attempt early data for some reason.  |conn| discards the
- * following connection states:
+ * not to attempt early data for some reason.  Only client can call
+ * this function.  |conn| discards the following connection states:
  *
  * - Any opened streams.
  * - Stream identifier allocations.

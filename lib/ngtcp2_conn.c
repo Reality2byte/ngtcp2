@@ -13236,10 +13236,13 @@ static int delete_strms_pq_each(void *data, void *ptr) {
 
 /*
  * conn_discard_early_data_state discards any connection states which
- * are altered by any operations during early data transfer.
+ * are altered by any operations during early data transfer.  This
+ * function assumes that |conn| is initialized as client.
  */
 static void conn_discard_early_data_state(ngtcp2_conn *conn) {
   ngtcp2_frame_chain **pfrc, *frc;
+
+  assert(!conn->server);
 
   ngtcp2_rtb_remove_early_data(&conn->pktns.rtb, &conn->cstat);
 
@@ -13258,13 +13261,8 @@ static void conn_discard_early_data_state(ngtcp2_conn *conn) {
   conn->rx.uni.unsent_max_streams = conn->rx.uni.max_streams =
     conn->local.transport_params.initial_max_streams_uni;
 
-  if (conn->server) {
-    conn->tx.bidi.next_stream_id = 1;
-    conn->tx.uni.next_stream_id = 3;
-  } else {
-    conn->tx.bidi.next_stream_id = 0;
-    conn->tx.uni.next_stream_id = 2;
-  }
+  conn->tx.bidi.next_stream_id = 0;
+  conn->tx.uni.next_stream_id = 2;
 
   for (pfrc = &conn->pktns.tx.frq; *pfrc;) {
     frc = *pfrc;
@@ -13274,6 +13272,8 @@ static void conn_discard_early_data_state(ngtcp2_conn *conn) {
 }
 
 int ngtcp2_conn_tls_early_data_rejected(ngtcp2_conn *conn) {
+  assert(!conn->server);
+
   if (conn->flags & NGTCP2_CONN_FLAG_EARLY_DATA_REJECTED) {
     return 0;
   }
