@@ -7786,13 +7786,11 @@ handle_max_remote_streams_extension(uint64_t *punsent_max_remote_streams,
  *
  * NGTCP2_ERR_STREAM_STATE
  *     RESET_STREAM frame is received to the local stream which is not
- *     initiated.
+ *     initiated; or RESET_STREAM frame is received to the local
+ *     unidirectional stream
  * NGTCP2_ERR_STREAM_LIMIT
  *     RESET_STREAM frame has remote stream ID which is strictly
  *     greater than the allowed limit.
- * NGTCP2_ERR_PROTO
- *     RESET_STREAM frame is received to the local unidirectional
- *     stream
  * NGTCP2_ERR_NOMEM
  *     Out of memory.
  * NGTCP2_ERR_CALLBACK_FAILURE
@@ -7829,7 +7827,7 @@ static int conn_recv_reset_stream(ngtcp2_conn *conn,
     idtr = &conn->bidi.idtr;
   } else {
     if (local_stream) {
-      return NGTCP2_ERR_PROTO;
+      return NGTCP2_ERR_STREAM_STATE;
     }
     if (conn->rx.uni.max_streams < ngtcp2_ord_stream_id(fr->stream_id)) {
       return NGTCP2_ERR_STREAM_LIMIT;
