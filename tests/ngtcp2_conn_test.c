@@ -2783,7 +2783,7 @@ void test_ngtcp2_conn_recv_reset_stream(void) {
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
   rv = ngtcp2_conn_read_pkt(conn, &null_path.path, NULL, buf, pktlen, 1);
 
-  assert_int(NGTCP2_ERR_PROTO, ==, rv);
+  assert_int(NGTCP2_ERR_STREAM_STATE, ==, rv);
 
   ngtcp2_conn_del(conn);
 
