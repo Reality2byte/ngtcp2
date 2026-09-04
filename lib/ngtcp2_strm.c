@@ -734,7 +734,7 @@ int ngtcp2_strm_require_retransmit_max_stream_data(
 
 int ngtcp2_strm_require_retransmit_stream_data_blocked(
   const ngtcp2_strm *strm, const ngtcp2_stream_data_blocked *fr) {
-  return fr->offset == strm->tx.max_offset &&
+  return fr->max_stream_data == strm->tx.max_offset &&
          !(strm->flags & NGTCP2_STRM_FLAG_SHUT_WR);
 }
 

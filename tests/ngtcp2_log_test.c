@@ -747,7 +747,7 @@ void test_ngtcp2_log_fr(void) {
     .expected =
       {
         "I00001123 0xdeadbeef frm rx 778 1RTT DATA_BLOCKED(0x14) "
-        "offset=1000000007",
+        "max_data=1000000007",
       },
   };
 
@@ -758,7 +758,7 @@ void test_ngtcp2_log_fr(void) {
                      .data_blocked =
                        {
                          .type = NGTCP2_FRAME_DATA_BLOCKED,
-                         .offset = 1000000007,
+                         .max_data = 1000000007,
                        },
                    });
 
@@ -769,7 +769,7 @@ void test_ngtcp2_log_fr(void) {
     .expected =
       {
         "I00001123 0xdeadbeef frm rx 778 1RTT STREAM_DATA_BLOCKED(0x15) "
-        "id=0x3b9aca09 offset=1000000007",
+        "id=0x3b9aca09 max_stream_data=1000000007",
       },
   };
 
@@ -781,7 +781,7 @@ void test_ngtcp2_log_fr(void) {
                        {
                          .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
                          .stream_id = 1000000009,
-                         .offset = 1000000007,
+                         .max_stream_data = 1000000007,
                        },
                    });
 

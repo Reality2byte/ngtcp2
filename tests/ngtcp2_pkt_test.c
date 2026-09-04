@@ -1367,7 +1367,7 @@ void test_ngtcp2_pkt_encode_data_blocked_frame(void) {
 
   fr = (ngtcp2_data_blocked){
     .type = NGTCP2_FRAME_DATA_BLOCKED,
-    .offset = 0x31F2F3F4F5F6F7F8ULL,
+    .max_data = 0x31F2F3F4F5F6F7F8ULL,
   };
 
   rv = ngtcp2_pkt_encode_data_blocked_frame(buf, sizeof(buf), &fr);
@@ -1378,7 +1378,7 @@ void test_ngtcp2_pkt_encode_data_blocked_frame(void) {
 
   assert_ptrdiff((ngtcp2_ssize)framelen, ==, rv);
   assert_uint64(fr.type, ==, nfr.type);
-  assert_uint64(fr.offset, ==, nfr.offset);
+  assert_uint64(fr.max_data, ==, nfr.max_data);
 
   /* Fail if a frame is truncated. */
   for (i = 1; i < framelen; ++i) {
@@ -1398,7 +1398,7 @@ void test_ngtcp2_pkt_encode_stream_data_blocked_frame(void) {
   fr = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = 0xF1F2F3F4U,
-    .offset = 0x35F6F7F8F9FAFBFCULL,
+    .max_stream_data = 0x35F6F7F8F9FAFBFCULL,
   };
 
   rv = ngtcp2_pkt_encode_stream_data_blocked_frame(buf, sizeof(buf), &fr);
@@ -1410,7 +1410,7 @@ void test_ngtcp2_pkt_encode_stream_data_blocked_frame(void) {
   assert_ptrdiff((ngtcp2_ssize)framelen, ==, rv);
   assert_uint64(fr.type, ==, nfr.type);
   assert_int64(fr.stream_id, ==, nfr.stream_id);
-  assert_uint64(fr.offset, ==, nfr.offset);
+  assert_uint64(fr.max_stream_data, ==, nfr.max_stream_data);
 
   /* Fail if a frame is truncated. */
   for (i = 1; i < framelen; ++i) {

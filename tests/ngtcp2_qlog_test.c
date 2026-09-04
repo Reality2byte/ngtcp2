@@ -374,7 +374,7 @@ void test_ngtcp2_qlog_write_frame(void) {
   {
     fr.data_blocked = (ngtcp2_data_blocked){
       .type = NGTCP2_FRAME_DATA_BLOCKED,
-      .offset = 141245489541204826,
+      .max_data = 141245489541204826,
     };
 
     ngtcp2_qlog_write_frame(&qlog, &fr);
@@ -391,7 +391,7 @@ void test_ngtcp2_qlog_write_frame(void) {
     fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
       .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
       .stream_id = 1000000007,
-      .offset = 3510083742766371473,
+      .max_stream_data = 3510083742766371473,
     };
 
     ngtcp2_qlog_write_frame(&qlog, &fr);
