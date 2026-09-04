@@ -242,8 +242,15 @@ void test_ngtcp2_transport_params_encode(void) {
 }
 
 void test_ngtcp2_transport_params_decode(void) {
-  ngtcp2_transport_params params;
+  ngtcp2_transport_params params, src;
+  uint8_t rawbuf[1024];
+  ngtcp2_buf buf;
+  ngtcp2_ssize nwrite;
+  const uint8_t avail_versions[] = {0x00, 0x00, 0x00, 0x1};
+  const uint8_t bad_avail_versions[] = {0x00, 0x00, 0x00, 0x0};
   int rv;
+
+  ngtcp2_buf_init(&buf, rawbuf, sizeof(rawbuf));
 
   /* Decode from 0 length data */
   rv = ngtcp2_transport_params_decode(&params, NULL, 0);
@@ -272,6 +279,314 @@ void test_ngtcp2_transport_params_decode(void) {
   assert_uint64(0, ==, params.max_datagram_frame_size);
   assert_false(params.grease_quic_bit);
   assert_false(params.version_info_present);
+
+  /* Transport parameter is prematurely truncated inside type */
+  ngtcp2_buf_reset(&buf);
+
+  buf.last = ngtcp2_put_uvarint(buf.last, NGTCP2_MAX_VARINT);
+  --buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* initial_max_streams_bidi is larger than or NGTCP2_MAX_STREAMS */
+  ngtcp2_transport_params_default(&src);
+  src.initial_max_streams_bidi = NGTCP2_MAX_STREAMS + 1;
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* initial_max_streams_uni is larger than or NGTCP2_MAX_STREAMS */
+  ngtcp2_transport_params_default(&src);
+  src.initial_max_streams_uni = NGTCP2_MAX_STREAMS + 1;
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* maximum max_idle_timeout */
+  ngtcp2_transport_params_default(&src);
+  src.max_idle_timeout = 18446744073709 * NGTCP2_MILLISECONDS;
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(0, ==, rv);
+  assert_uint64(18446744073709 * NGTCP2_MILLISECONDS, ==,
+                params.max_idle_timeout);
+
+  /* max_idle_timeout is too large, overflows uint64_t when multiplied
+     by NGTCP2_MILLISECONDS. */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_MAX_IDLE_TIMEOUT);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, ngtcp2_put_uvarintlen(18446744073710));
+  buf.last = ngtcp2_put_uvarint(buf.last, 18446744073710);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(0, ==, rv);
+  assert_uint64(18446744073709 * NGTCP2_MILLISECONDS, ==,
+                params.max_idle_timeout);
+
+  /* Prematurely truncated stateless_reset_token value length (note:
+     valid value length is always NGTCP2_STATELESS_RESET_TOKENLEN
+     bytes) */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_STATELESS_RESET_TOKEN);
+  ngtcp2_put_uvarint(buf.last, NGTCP2_MAX_VARINT);
+  ++buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The value length of stateless_reset_token is not
+     NGTCP2_STATELESS_RESET_TOKENLEN bytes */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_STATELESS_RESET_TOKEN);
+  buf.last = ngtcp2_put_uvarint(buf.last, NGTCP2_STATELESS_RESET_TOKENLEN - 1);
+  buf.last = ngtcp2_setmem(buf.last, 0, NGTCP2_STATELESS_RESET_TOKENLEN - 1);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* ack_delay_exponent is larger than 20 */
+  ngtcp2_transport_params_default(&src);
+  src.ack_delay_exponent = 21;
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* Prematurely truncated preferred_address value length */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_PREFERRED_ADDRESS);
+  ngtcp2_put_uvarint(buf.last, NGTCP2_MAX_VARINT);
+  ++buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The value length of preferred_address is less than the minimum
+     required length */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_PREFERRED_ADDRESS);
+  buf.last = ngtcp2_put_uvarint(
+    buf.last, 4 + 2 + 16 + 2 + 1 + NGTCP2_STATELESS_RESET_TOKENLEN - 1);
+  buf.last = ngtcp2_setmem(
+    buf.last, 0, 4 + 2 + 16 + 2 + 1 + NGTCP2_STATELESS_RESET_TOKENLEN - 1);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The length of Connection ID in preferred_address is larger than
+     NGTCP2_MAX_CIDLEN */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_PREFERRED_ADDRESS);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, 4 + 2 + 16 + 2 + 1 + NGTCP2_MAX_CIDLEN + 1 +
+                                   NGTCP2_STATELESS_RESET_TOKENLEN);
+  buf.last = ngtcp2_setmem(buf.last, 0, 4 + 2 + 16 + 2);
+  *buf.last++ = NGTCP2_MAX_CIDLEN + 1;
+  buf.last = ngtcp2_setmem(
+    buf.last, 0, NGTCP2_MAX_CIDLEN + 1 + NGTCP2_STATELESS_RESET_TOKENLEN);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The length of preferred_address is smaller than the encoded byte
+     sequence */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_PREFERRED_ADDRESS);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, 4 + 2 + 16 + 2 + 1 + NGTCP2_MAX_CIDLEN - 1 +
+                                   NGTCP2_STATELESS_RESET_TOKENLEN);
+  buf.last = ngtcp2_setmem(buf.last, 0, 4 + 2 + 16 + 2);
+  *buf.last++ = NGTCP2_MAX_CIDLEN;
+  buf.last = ngtcp2_setmem(buf.last, 0,
+                           NGTCP2_MAX_CIDLEN + NGTCP2_STATELESS_RESET_TOKENLEN);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* disable_active_migration has non-zero length value */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(
+    buf.last, NGTCP2_TRANSPORT_PARAM_DISABLE_ACTIVE_MIGRATION);
+  buf.last = ngtcp2_put_uvarint(buf.last, 1);
+  buf.last = ngtcp2_put_uvarint(buf.last, 1);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* max_ack_delay is larger than 16384 */
+  ngtcp2_transport_params_default(&src);
+  src.max_ack_delay = 16385 * NGTCP2_MILLISECONDS;
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* Prematurely truncated version_information value length */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_VERSION_INFORMATION);
+  ngtcp2_put_uvarint(buf.last, NGTCP2_MAX_VARINT);
+  ++buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The length of version_information is not multiple of 4 */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_VERSION_INFORMATION);
+  buf.last = ngtcp2_put_uvarint(buf.last, 7);
+  buf.last = ngtcp2_setmem(buf.last, 0, 7);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The length of version_information is 0 */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_VERSION_INFORMATION);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The chosen version in version_information is 0x00 */
+  ngtcp2_transport_params_default(&src);
+  src.version_info_present = 1;
+  src.version_info.available_versions = avail_versions;
+  src.version_info.available_versionslen = sizeof(avail_versions);
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The available versions in version_information contains 0x00 */
+  ngtcp2_transport_params_default(&src);
+  src.version_info_present = 1;
+  src.version_info.chosen_version = NGTCP2_PROTO_VER_V1;
+  src.version_info.available_versions = bad_avail_versions;
+  src.version_info.available_versionslen = sizeof(bad_avail_versions);
+
+  ngtcp2_buf_reset(&buf);
+  nwrite =
+    ngtcp2_transport_params_encode(buf.last, ngtcp2_buf_left(&buf), &src);
+
+  assert_ptrdiff(0, <, nwrite);
+
+  buf.last += nwrite;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* Ignore unknown transport parameters */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0xDEADBEEF);
+  buf.last = ngtcp2_put_uvarint(buf.last, 100);
+  buf.last = ngtcp2_setmem(buf.last, 0, 100);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0xCACECAFE);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_DATA);
+  buf.last = ngtcp2_put_uvarint(buf.last, ngtcp2_put_uvarintlen(1000000007));
+  buf.last = ngtcp2_put_uvarint(buf.last, 1000000007);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(0, ==, rv);
+  assert_uint64(1000000007, ==, params.initial_max_data);
+
+  /* Prematurely truncated unknown transport parameter value length */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0xDEADBEEF);
+  ngtcp2_put_uvarint(buf.last, 100);
+  ++buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The value of unknown transport parameter is truncated */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0xDEADBEEF);
+  buf.last = ngtcp2_put_uvarint(buf.last, 78);
+  buf.last = ngtcp2_setmem(buf.last, 0, 77);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
 }
 
 void test_ngtcp2_transport_params_decode_new(void) {
