@@ -3862,7 +3862,7 @@ static ngtcp2_ssize conn_write_pkt(ngtcp2_conn *conn, ngtcp2_pkt_info *pi,
         }
         break;
       case NGTCP2_FRAME_DATA_BLOCKED:
-        if ((*pfrc)->fr.data_blocked.offset != conn->tx.max_offset) {
+        if ((*pfrc)->fr.data_blocked.max_data != conn->tx.max_offset) {
           frc = *pfrc;
           *pfrc = (*pfrc)->next;
           ngtcp2_frame_chain_objalloc_del(frc, &conn->frc_objalloc, conn->mem);
@@ -4019,7 +4019,7 @@ static ngtcp2_ssize conn_write_pkt(ngtcp2_conn *conn, ngtcp2_pkt_info *pi,
 
               nfrc->fr.data_blocked = (ngtcp2_data_blocked){
                 .type = NGTCP2_FRAME_DATA_BLOCKED,
-                .offset = conn->tx.max_offset,
+                .max_data = conn->tx.max_offset,
               };
               *pfrc = nfrc;
 
@@ -4049,7 +4049,7 @@ static ngtcp2_ssize conn_write_pkt(ngtcp2_conn *conn, ngtcp2_pkt_info *pi,
               nfrc->fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
                 .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
                 .stream_id = strm->stream_id,
-                .offset = strm->tx.max_offset,
+                .max_stream_data = strm->tx.max_offset,
               };
               *pfrc = nfrc;
 
@@ -4370,7 +4370,7 @@ static ngtcp2_ssize conn_write_pkt(ngtcp2_conn *conn, ngtcp2_pkt_info *pi,
 
       nfrc->fr.data_blocked = (ngtcp2_data_blocked){
         .type = NGTCP2_FRAME_DATA_BLOCKED,
-        .offset = conn->tx.offset,
+        .max_data = conn->tx.offset,
       };
 
       rv = conn_ppe_write_frame_hd_log(conn, ppe, &hd_logged, hd, &nfrc->fr);
@@ -4410,7 +4410,7 @@ static ngtcp2_ssize conn_write_pkt(ngtcp2_conn *conn, ngtcp2_pkt_info *pi,
       nfrc->fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
         .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
         .stream_id = strm->stream_id,
-        .offset = strm->tx.max_offset,
+        .max_stream_data = strm->tx.max_offset,
       };
 
       rv = conn_ppe_write_frame_hd_log(conn, ppe, &hd_logged, hd, &nfrc->fr);
@@ -8569,11 +8569,11 @@ static int conn_recv_stream_data_blocked(ngtcp2_conn *conn,
     }
   }
 
-  if (strm->rx.max_offset < fr->offset) {
+  if (strm->rx.max_offset < fr->max_stream_data) {
     return NGTCP2_ERR_FLOW_CONTROL;
   }
 
-  if (fr->offset <= strm->rx.last_offset) {
+  if (fr->max_stream_data <= strm->rx.last_offset) {
     return 0;
   }
 
@@ -8581,7 +8581,7 @@ static int conn_recv_stream_data_blocked(ngtcp2_conn *conn,
     return NGTCP2_ERR_FINAL_SIZE;
   }
 
-  datalen = fr->offset - strm->rx.last_offset;
+  datalen = fr->max_stream_data - strm->rx.last_offset;
   if (datalen) {
     if (conn_max_data_violated(conn, datalen)) {
       return NGTCP2_ERR_FLOW_CONTROL;
@@ -8590,7 +8590,7 @@ static int conn_recv_stream_data_blocked(ngtcp2_conn *conn,
     conn->rx.offset += datalen;
   }
 
-  strm->rx.last_offset = fr->offset;
+  strm->rx.last_offset = fr->max_stream_data;
 
   return 0;
 }
@@ -8606,7 +8606,7 @@ static int conn_recv_stream_data_blocked(ngtcp2_conn *conn,
  *     It violates connection-level flow control limit.
  */
 static int conn_recv_data_blocked(ngtcp2_conn *conn, ngtcp2_data_blocked *fr) {
-  if (conn->rx.max_offset < fr->offset) {
+  if (conn->rx.max_offset < fr->max_data) {
     return NGTCP2_ERR_FLOW_CONTROL;
   }
 

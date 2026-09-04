@@ -3223,7 +3223,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 65535,
+    .max_stream_data = 65535,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3245,7 +3245,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
 
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
-    .offset = 65535,
+    .max_stream_data = 65535,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3262,7 +3262,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
 
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
-    .offset = 65535,
+    .max_stream_data = 65535,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3285,7 +3285,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = 1,
-    .offset = 65535,
+    .max_stream_data = 65535,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3304,7 +3304,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 65536,
+    .max_stream_data = 65536,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3331,7 +3331,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 128 * 1024 + 1,
+    .max_stream_data = 128 * 1024 + 1,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3368,7 +3368,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 11999,
+    .max_stream_data = 11999,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3409,7 +3409,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 12000,
+    .max_stream_data = 12000,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3437,7 +3437,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 7777,
+    .max_stream_data = 7777,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3482,7 +3482,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 999,
+    .max_stream_data = 999,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3500,7 +3500,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 998,
+    .max_stream_data = 998,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3523,7 +3523,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = stream_id,
-    .offset = 1,
+    .max_stream_data = 1,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3541,7 +3541,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = 3,
-    .offset = 719,
+    .max_stream_data = 719,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3567,7 +3567,7 @@ void test_ngtcp2_conn_recv_stream_data_blocked(void) {
   fr.stream_data_blocked = (ngtcp2_stream_data_blocked){
     .type = NGTCP2_FRAME_STREAM_DATA_BLOCKED,
     .stream_id = 11,
-    .offset = 719,
+    .max_stream_data = 719,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3830,7 +3830,7 @@ void test_ngtcp2_conn_recv_data_blocked(void) {
 
   fr.data_blocked = (ngtcp2_data_blocked){
     .type = NGTCP2_FRAME_DATA_BLOCKED,
-    .offset = 128 * 1024,
+    .max_data = 128 * 1024,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -3846,7 +3846,7 @@ void test_ngtcp2_conn_recv_data_blocked(void) {
 
   fr.data_blocked = (ngtcp2_data_blocked){
     .type = NGTCP2_FRAME_DATA_BLOCKED,
-    .offset = 128 * 1024 + 1,
+    .max_data = 128 * 1024 + 1,
   };
 
   pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
@@ -17543,7 +17543,8 @@ void test_ngtcp2_conn_send_stream_data_blocked(void) {
 
   assert_uint64(NGTCP2_FRAME_STREAM_DATA_BLOCKED, ==, frc->fr.hd.type);
   assert_int64(stream_id, ==, frc->fr.stream_data_blocked.stream_id);
-  assert_uint64(strm->tx.max_offset, ==, frc->fr.stream_data_blocked.offset);
+  assert_uint64(strm->tx.max_offset, ==,
+                frc->fr.stream_data_blocked.max_stream_data);
   assert_uint64(strm->tx.max_offset, ==, strm->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17599,7 +17600,8 @@ void test_ngtcp2_conn_send_stream_data_blocked(void) {
 
   assert_uint64(NGTCP2_FRAME_STREAM_DATA_BLOCKED, ==, frc->fr.hd.type);
   assert_int64(stream_id, ==, frc->fr.stream_data_blocked.stream_id);
-  assert_uint64(strm->tx.max_offset, ==, frc->fr.stream_data_blocked.offset);
+  assert_uint64(strm->tx.max_offset, ==,
+                frc->fr.stream_data_blocked.max_stream_data);
   assert_uint64(strm->tx.max_offset, ==, strm->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17647,7 +17649,8 @@ void test_ngtcp2_conn_send_stream_data_blocked(void) {
 
   assert_uint64(NGTCP2_FRAME_STREAM_DATA_BLOCKED, ==, frc->fr.hd.type);
   assert_int64(stream_id, ==, frc->fr.stream_data_blocked.stream_id);
-  assert_uint64(strm->tx.max_offset, ==, frc->fr.stream_data_blocked.offset);
+  assert_uint64(strm->tx.max_offset, ==,
+                frc->fr.stream_data_blocked.max_stream_data);
   assert_uint64(strm->tx.max_offset, ==, strm->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17714,7 +17717,8 @@ void test_ngtcp2_conn_send_stream_data_blocked(void) {
 
   assert_uint64(NGTCP2_FRAME_STREAM_DATA_BLOCKED, ==, frc->fr.hd.type);
   assert_int64(stream_id, ==, frc->fr.stream_data_blocked.stream_id);
-  assert_uint64(strm->tx.max_offset, ==, frc->fr.stream_data_blocked.offset);
+  assert_uint64(strm->tx.max_offset, ==,
+                frc->fr.stream_data_blocked.max_stream_data);
   assert_uint64(strm->tx.max_offset, ==, strm->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17775,7 +17779,8 @@ void test_ngtcp2_conn_send_stream_data_blocked(void) {
 
   assert_uint64(NGTCP2_FRAME_STREAM_DATA_BLOCKED, ==, frc->fr.hd.type);
   assert_int64(stream_id, ==, frc->fr.stream_data_blocked.stream_id);
-  assert_uint64(strm->tx.max_offset, ==, frc->fr.stream_data_blocked.offset);
+  assert_uint64(strm->tx.max_offset, ==,
+                frc->fr.stream_data_blocked.max_stream_data);
   assert_uint64(strm->tx.max_offset, ==, strm->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17864,7 +17869,7 @@ void test_ngtcp2_conn_send_data_blocked(void) {
   frc = ent->frc;
 
   assert_uint64(NGTCP2_FRAME_DATA_BLOCKED, ==, frc->fr.hd.type);
-  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.offset);
+  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.max_data);
   assert_uint64(conn->tx.max_offset, ==, conn->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17907,7 +17912,7 @@ void test_ngtcp2_conn_send_data_blocked(void) {
   frc = frc->next;
 
   assert_uint64(NGTCP2_FRAME_DATA_BLOCKED, ==, frc->fr.hd.type);
-  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.offset);
+  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.max_data);
   assert_uint64(conn->tx.max_offset, ==, conn->tx.last_blocked_offset);
   assert_null(frc->next);
 
@@ -17948,7 +17953,7 @@ void test_ngtcp2_conn_send_data_blocked(void) {
   frc = ent->frc;
 
   assert_uint64(NGTCP2_FRAME_DATA_BLOCKED, ==, frc->fr.hd.type);
-  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.offset);
+  assert_uint64(conn->tx.max_offset, ==, frc->fr.data_blocked.max_data);
   assert_uint64(conn->tx.max_offset, ==, conn->tx.last_blocked_offset);
   assert_null(frc->next);
 
