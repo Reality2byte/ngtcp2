@@ -5490,6 +5490,7 @@ void test_ngtcp2_conn_continue_handshake(void) {
 }
 
 void test_ngtcp2_conn_retransmit_protected(void) {
+  static const uint8_t token[] = "token";
   ngtcp2_conn *conn;
   uint8_t buf[1200];
   ngtcp2_ssize spktlen;
@@ -6112,6 +6113,68 @@ void test_ngtcp2_conn_retransmit_protected(void) {
   assert_true(ngtcp2_ksl_it_end(&it));
   assert_size(0, ==, conn->pktns.rtb.num_lost_pkts);
   assert_size(0, ==, conn->pktns.rtb.num_lost_ignore_pkts);
+
+  ngtcp2_conn_del(conn);
+
+  /* Retransmit NEW_TOKEN */
+  setup_default_server(&conn);
+  ngtcp2_tpe_init_conn(&tpe, conn);
+
+  spktlen =
+    ngtcp2_conn_write_stream(conn, NULL, NULL, buf, sizeof(buf), NULL,
+                             NGTCP2_WRITE_STREAM_FLAG_NONE, -1, NULL, 0, ++t);
+
+  assert_ptrdiff(0, <, spktlen);
+
+  fr.ack = (ngtcp2_ack){
+    .type = NGTCP2_FRAME_ACK,
+    .largest_ack = conn->pktns.tx.last_pkt_num,
+  };
+
+  pktlen = ngtcp2_tpe_write_1rtt(&tpe, buf, sizeof(buf), &fr, 1);
+  rv = ngtcp2_conn_read_pkt(conn, &null_path.path, NULL, buf, pktlen, ++t);
+
+  assert_int(0, ==, rv);
+
+  rv = ngtcp2_conn_submit_new_token(conn, token, ngtcp2_strlen_lit(token));
+
+  assert_int(0, ==, rv);
+
+  spktlen =
+    ngtcp2_conn_write_stream(conn, NULL, NULL, buf, sizeof(buf), NULL,
+                             NGTCP2_WRITE_STREAM_FLAG_NONE, -1, NULL, 0, ++t);
+
+  assert_ptrdiff(0, <, spktlen);
+
+  t += NGTCP2_SECONDS;
+
+  conn->pktns.rtb.largest_acked_tx_pkt_num = 1000;
+  ngtcp2_conn_detect_lost_pkt(conn, &conn->pktns, &conn->cstat, ++t);
+
+  assert_not_null(conn->pktns.tx.frq);
+
+  frc = conn->pktns.tx.frq;
+
+  assert_uint64(NGTCP2_FRAME_NEW_TOKEN, ==, frc->fr.hd.type);
+  assert_memn_equal(token, ngtcp2_strlen_lit(token), frc->fr.new_token.token,
+                    frc->fr.new_token.tokenlen);
+
+  spktlen =
+    ngtcp2_conn_write_stream(conn, NULL, NULL, buf, sizeof(buf), NULL,
+                             NGTCP2_WRITE_STREAM_FLAG_NONE, -1, NULL, 0, ++t);
+
+  assert_ptrdiff(0, <, spktlen);
+
+  it = ngtcp2_rtb_head(&conn->pktns.rtb);
+
+  assert_false(ngtcp2_ksl_it_end(&it));
+
+  ent = ngtcp2_ksl_it_get(&it);
+
+  assert_uint64(NGTCP2_FRAME_NEW_TOKEN, ==, ent->frc->fr.hd.type);
+  assert_memn_equal(token, ngtcp2_strlen_lit(token),
+                    ent->frc->fr.new_token.token,
+                    ent->frc->fr.new_token.tokenlen);
 
   ngtcp2_conn_del(conn);
 }
