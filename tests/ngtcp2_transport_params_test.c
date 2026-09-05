@@ -587,6 +587,38 @@ void test_ngtcp2_transport_params_decode(void) {
   rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
 
   assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The length of transport parameter value is missing */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(buf.last, 0xDEADBEEF);
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* The value length of max_data does not match the encoded
+     integer */
+  ngtcp2_buf_reset(&buf);
+  buf.last =
+    ngtcp2_put_uvarint(buf.last, NGTCP2_TRANSPORT_PARAM_INITIAL_MAX_DATA);
+  buf.last = ngtcp2_put_uvarint(buf.last, 2);
+  buf.last = ngtcp2_put_uvarint(buf.last, 63);
+  *buf.last++ = 0;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
+
+  /* Prematurely truncated length of Connection ID parameter */
+  ngtcp2_buf_reset(&buf);
+  buf.last = ngtcp2_put_uvarint(
+    buf.last, NGTCP2_TRANSPORT_PARAM_ORIGINAL_DESTINATION_CONNECTION_ID);
+  ngtcp2_put_uvarint(buf.last, 100);
+  ++buf.last;
+
+  rv = ngtcp2_transport_params_decode(&params, buf.pos, ngtcp2_buf_len(&buf));
+
+  assert_int(NGTCP2_ERR_MALFORMED_TRANSPORT_PARAM, ==, rv);
 }
 
 void test_ngtcp2_transport_params_decode_new(void) {
