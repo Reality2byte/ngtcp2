@@ -110,25 +110,36 @@ void test_ngtcp2_wf_update(void) {
   assert_uint64(9, ==, wf.samples[2].ts);
   assert_uint64(90, ==, ngtcp2_wf_get_best(&wf));
 
-  /* Update second and third samples. */
-  ngtcp2_wf_update(&wf, 85, 9);
+  /* The 2nd best has expired. */
+  ngtcp2_wf_update(&wf, 70, 17);
 
-  assert_uint64(90, ==, wf.samples[0].value);
-  assert_uint64(3, ==, wf.samples[0].ts);
-  assert_uint64(85, ==, wf.samples[1].value);
-  assert_uint64(9, ==, wf.samples[1].ts);
-  assert_uint64(85, ==, wf.samples[2].value);
-  assert_uint64(9, ==, wf.samples[2].ts);
-  assert_uint64(90, ==, ngtcp2_wf_get_best(&wf));
+  assert_uint64(75, ==, wf.samples[0].value);
+  assert_uint64(9, ==, wf.samples[0].ts);
+  assert_uint64(70, ==, wf.samples[1].value);
+  assert_uint64(17, ==, wf.samples[1].ts);
+  assert_uint64(70, ==, wf.samples[2].value);
+  assert_uint64(17, ==, wf.samples[2].ts);
+  assert_uint64(75, ==, ngtcp2_wf_get_best(&wf));
+
+  /* Update second and third samples. */
+  ngtcp2_wf_update(&wf, 71, 17);
+
+  assert_uint64(75, ==, wf.samples[0].value);
+  assert_uint64(9, ==, wf.samples[0].ts);
+  assert_uint64(71, ==, wf.samples[1].value);
+  assert_uint64(17, ==, wf.samples[1].ts);
+  assert_uint64(71, ==, wf.samples[2].value);
+  assert_uint64(17, ==, wf.samples[2].ts);
+  assert_uint64(75, ==, ngtcp2_wf_get_best(&wf));
 
   /* Update all samples because new sample is the best estimate. */
-  ngtcp2_wf_update(&wf, 100, 10);
+  ngtcp2_wf_update(&wf, 100, 17);
 
   assert_uint64(100, ==, wf.samples[0].value);
-  assert_uint64(10, ==, wf.samples[0].ts);
+  assert_uint64(17, ==, wf.samples[0].ts);
   assert_uint64(100, ==, wf.samples[1].value);
-  assert_uint64(10, ==, wf.samples[1].ts);
+  assert_uint64(17, ==, wf.samples[1].ts);
   assert_uint64(100, ==, wf.samples[2].value);
-  assert_uint64(10, ==, wf.samples[2].ts);
+  assert_uint64(17, ==, wf.samples[2].ts);
   assert_uint64(100, ==, ngtcp2_wf_get_best(&wf));
 }
